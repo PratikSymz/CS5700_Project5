@@ -1,0 +1,41 @@
+#README
+
+CS 5700 Project 5 Roll your own CDN
+======================================================================
+Team Name: amp
+Team Members:
+			Pratik Budhiraja (NUID: 002105546)
+			Marwa Elali (NUID: 001527297)
+			Haojun Zhu (NUID: 002979116)
+
+======================================================================
+This project is implmented using Python programming language
+
+Delivery for Milestone April 19 2022:
+	Makefile
+	httpserver
+	dnsserver
+	deployCDN
+	runCDN
+	stopCDN
+	README
+
+======================================================================
+High-level Approach
+	- httpserver
+		- A basic CDN HTTP server with cache management
+		  usage: ./httpserver -p <port> -o <origin>
+
+		- When a client send request to our HTTP server, we managed to check the local cache first. If the requested content exists in the local cache content, the server will send the content to the client directly. If the requested content does not exist in the local cache,
+		it will forward the request to ORIGIN server and get resposne from the ORIGIN server. If the response status code from ORIGIN is 200, it will save the file accordingly and forward the response to the client.
+
+	- dnsserver
+		- A basic DNS server without any measurement methods
+		  usage: ./dnsserver -p <port> -n <name>
+		- accept clients DNS query and parse the query,'select best replica' and response composed DNS answers to client.
+
+
+======================================================================
+Challenges
+	- 
+	

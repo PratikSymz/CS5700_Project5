@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# hosts
+DNSHOST=p5-dns.5700.network
+HTTPHOSTS=(p5-http-a.5700.network)
+
+while getopts p:o:n:u:i: args
+do
+	case $args in
+		p)
+			port=$OPTARG
+			#echo "port = " $port
+			;;
+		o)
+			origin=$OPTARG
+			#echo "origin = " $origin
+			;;
+		n)
+			name=$OPTARG
+			#echo "name = " $name
+			;;
+		u)
+			username=$OPTARG
+			echo "username = " $username
+			;;
+		i)
+			keyfile=$OPTARG
+			echo "keyfile = " $keyfile
+			;;
+		?)
+			echo "usage: ./deployCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>"
+			exit 1
+			;;
+		esac
+done
+
+echo "Deploying replica server... ..."
+
+for host in $HTTPHOSTS
+do
+	echo "Deploying host: " $username@$host
+	# ssh -i $keyfile $username@$host "rm httpserver"
+	ssh -i $keyfile $username@$host "mkdir content"
+	scp -i $keyfile httpserver $username@$host:~
+done
+
+echo "Deploying DNS server at $username@$DNSHOST... ..."
+scp -i $keyfile dnsserver $username@$DNSHOST:~
+
