@@ -6,13 +6,20 @@ import utils
 
 
 PORT_SERVER: int = 8080
-RESPONSE_OK = 200
+RESPONSE_OK: int = 200
 
 class HTTPManager(BaseHTTPRequestHandler):
     def __init__(self, origin_addr: str, port: int, cache: list, *args) -> None:
         self.origin_addr = origin_addr
         self.port = port
         self.mem_cache = cache
+
+        # Make origin server socket connection
+        try:
+            self.origin_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.origin_socket.connect((self.origin_addr, PORT_SERVER))
+        except:
+            sys.exit('Origin socket connection failed...')
         super().__init__(*args)
 
     def do_GET(self) -> None:
@@ -62,14 +69,13 @@ class HTTPManager(BaseHTTPRequestHandler):
 class HTTPServer(BaseServer):
     def __init__(self, server_address: tuple[str, int], RequestHandlerClass) -> None:
         super().__init__(server_address, RequestHandlerClass)
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_bind()
-        self.server_socket.listen(5)    # At most 5 connect requests
-
-    def server_bind(self) -> None:
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 2)
-        self.server_socket.bind(self.server_address)
-
+        try:
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 2)
+            self.server_socket.bind(self.server_address)
+            self.server_socket.listen(30)    # At most 30 connect requests
+        except:
+            sys.exit('Server socket connection failed...')
 
 def run_server(origin_server_addr: str, port: int) -> None:
     cache = []
