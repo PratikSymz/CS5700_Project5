@@ -1,4 +1,4 @@
-import os, socket, sys, getopt, errno, urllib.request
+import os, socket, sys, argparse, errno, urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import BaseServer
 
@@ -29,6 +29,10 @@ class HTTPManager(BaseHTTPRequestHandler):
                 request_url = utils.build_request_URL(self.origin_addr, self.port, self.path)
                 response = urllib.request.urlopen(request_url)
 
+                # Build local cache path for the url
+                response_path = utils.get_request_path(request_url)
+                # Retrieve data from the Origin server
+
             except Exception as network_exception:
                 print(str(network_exception))
                 return
@@ -36,14 +40,17 @@ class HTTPManager(BaseHTTPRequestHandler):
             self.send_response(RESPONSE_OK)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
-            self.wfile.write(response.read())
+            data = response.read().decode('utf-8')
+            self.wfile.write(data)
+            self.store_in_local(self.path, data)
+            self.mem_cache.append(self.path)
 
         else:
             cached_file = open(os.pardir + self.path)
             self.send_response(RESPONSE_OK)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
-            self.wfile.write(cached_file.read().encode())
+            self.wfile.write(cached_file.read().encode('utf-8'))
             cached_file.close()
 
     def store_in_local(self, path: str, contents: str) -> None:
@@ -86,13 +93,20 @@ def run_server(origin_server_addr: str, port: int) -> None:
 
 
 if __name__ == "__main__":
-    opts, argvs = getopt.getopt(sys.argv[1: ], 'p:o:')
-    for opt, arg in opts:
-        if opt == '-p':
-            port = int(arg)
-        elif opt == '-o':
-            server_name = arg
-        else:
-            sys.exit('FORMAT: ./httpserver -p <port> -o <origin>')
+    parser = argparse.ArgumentParser(description='HTTP Server')
+    parser.add_argument('-p', dest='port', type=int)
+    parser.add_argument('-p', dest='origin')
+    args = parser.parse_args()
 
-    run_server(server_name, port)   #type:ignore
+    run_server(args.origin, args.port)
+
+    # opts, argvs = getopt.getopt(sys.argv[1: ], 'p:o:')
+    # for opt, arg in opts:
+    #     if opt == '-p':
+    #         port = int(arg)
+    #     elif opt == '-o':
+    #         server_name = arg
+    #     else:
+    #         sys.exit('FORMAT: ./httpserver -p <port> -o <origin>')
+
+    
