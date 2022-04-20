@@ -22,14 +22,14 @@ Delivery for Milestone April 19 2022:
 
 ======================================================================
 High-level Approach
-	- httpserver
+	- httpserver (Haojun and Pratik)
 		- A basic CDN HTTP server with cache management
 		  usage: ./httpserver -p <port> -o <origin>
 
 		- When a client send request to our HTTP server, we managed to check the local cache first. If the requested content exists in the local cache content, the server will send the content to the client directly. If the requested content does not exist in the local cache,
-		it will forward the request to ORIGIN server and get resposne from the ORIGIN server. If the response status code from ORIGIN is 200, it will save the file accordingly and forward the response to the client.
+		it will forward the request to ORIGIN server and get response from the ORIGIN server. If the response status code from ORIGIN is 200, it will save the file accordingly and forward the response to the client.
 
-	- dnsserver
+	- dnsserver (Marwa)
 		- A basic DNS server without any measurement methods
 		  usage: ./dnsserver -p <port> -n <name>
 		- accept clients DNS query and parse the query,'select best replica' and response composed DNS answers to client.
@@ -37,5 +37,7 @@ High-level Approach
 
 ======================================================================
 Challenges
-	- 
+	- Figuring how to SSH into the replica and DNS servers
+	- DNS server: learning how to extract the correct data from the query and how to send the correct response
+	- HTTP Server: Figuring out the caching mechanism from the start, which took a lot of our time.
 	
