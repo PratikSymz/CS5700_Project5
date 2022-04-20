@@ -41,9 +41,9 @@ do
 	echo "Deploying host: " $username@$host
 	# ssh -i $keyfile $username@$host "rm httpserver"
 	ssh -i $keyfile $username@$host "mkdir content"
-	scp -i $keyfile httpserver $username@$host:~
+	scp -i $keyfile httpserver httpserver.py $username@$host:~
 done
 
 echo "Deploying DNS server at $username@$DNSHOST... ..."
-scp -i $keyfile dnsserver $username@$DNSHOST:~
+scp -i $keyfile dnsserver dnsserver.py $username@$DNSHOST:~
 
