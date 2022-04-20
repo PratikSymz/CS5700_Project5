@@ -1,25 +1,25 @@
 import argparse
+import dnslib
 import socket
-from struct import pack
 import sys
 
 class DNSServer:
-    def __init__(self):
+    def __init__(self, args):
         # Command line arguments
-        self.PORT = sys.argv[2]
-        self.NAME = sys.argv[4]
+        self.PORT = int(args.PORT)
+        self.NAME = args.NAME
 
         self.BUFFER = 1024
 
         try:
-            # create udp socket
             self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except:
+        except Exception as e:
+            print(e)
             sys.exit('Error creating socket')
 
     def get_localhost_ip(self):
         '''
-        Function: get_localhost_ip - gets the IP address of localhost
+        Function: get_localhost_ip - get local IP address with a temporary connection to google.com
         Params: none
         Return: localhost IP address as a string
         '''
@@ -31,7 +31,8 @@ class DNSServer:
 
     def parse_dig_query(self, packet):
         # TODO implement
-        return
+        print('parse dig query...')
+        # get ip address from dig query
 
     def run(self):
         '''
@@ -41,13 +42,14 @@ class DNSServer:
         Return: none
         '''
         ip_addr = self.get_localhost_ip()
+        print(f'IP Address: {ip_addr}')
         try:
             # bind to (ip, port)
-            self.udp_socket.connect((ip_addr, self.PORT))
-        except:
-            print('Error connecting socket')
+            self.udp_socket.bind((ip_addr, int(self.PORT)))
+        except Exception as e:
+            print(e)
+            sys.exit('Error binding socket')
 
-        # keep infinite loop to listen to incoming dig queries -> receive packets
         while True:
             packet = self.udp_socket.recvfrom(self.BUFFER)
             # parse dig query
@@ -61,4 +63,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', action='store', type=int, dest='PORT', help='-p <port>')
     parser.add_argument('-n', action='store', type=str, dest='NAME', help='-n <name>')
     args = parser.parse_args()
-    dns_server = DNSServer()
+    dns_server = DNSServer(args)
+    dns_server.run()
