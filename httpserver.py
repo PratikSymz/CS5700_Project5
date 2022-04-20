@@ -75,8 +75,8 @@ class HTTPManager(BaseHTTPRequestHandler):
 
 
 class HTTPServer(BaseServer):
-    def __init__(self, server_address: tuple[str, int], RequestHandlerClass) -> None:
-        super().__init__(server_address, RequestHandlerClass)
+    def __init__(self, server_address: tuple[str, int], request_handler_class) -> None:
+        BaseServer.__init__(self, server_address, request_handler_class)
         try:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 2)
