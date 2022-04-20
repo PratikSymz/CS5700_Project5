@@ -30,9 +30,39 @@ class DNSServer:
         return localhost_ip
 
     def parse_dig_query(self, packet):
-        # TODO implement
-        print('parse dig query...')
-        # get ip address from dig query
+        '''
+        Function: parse_dig_query - parses incoming dig queries
+        Params: packet - tuple of (data, address)
+        Return: none
+        '''
+        # parse packet
+        data = packet[0]
+        addr = packet[1]
+
+        # parse dig query
+        dig_query = dnslib.DNSRecord.parse(data)
+        print('incoming:\n', dig_query)
+
+        question_name = dig_query.q.qname
+        print(f'Question ID: {question_name}')
+        message_id = dig_query.header.id
+        print(f'Message ID: {message_id}')
+
+        # create response
+        response = dnslib.DNSRecord(
+            q=dig_query.q,
+            a=dnslib.RR(
+                rdata=dnslib.A(addr[0])
+            )
+        )
+        print('question type:\n', response.q.qtype)
+        print('response:\n', response.a)
+        # if qtype == 1 it is an A record
+        # TODO send response to client
+        # if response.q.qtype == 1 and response.q.qname == self.NAME:
+        #     print('Sending response to client')
+        #     print(dnslib.DNSRecord.parse(response.pack()))
+        #     self.udp_socket.sendto(response.pack(), addr)
 
     def run(self):
         '''
