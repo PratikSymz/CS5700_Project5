@@ -2,5 +2,4 @@
 .vscode/
 bin/
 http_server_alt/
-http_server_test.py
 utils/
