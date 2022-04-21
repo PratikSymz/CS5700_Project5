@@ -5,7 +5,7 @@ import socket
 def build_request_URL(host_addr: str, port_no: int, queries: str) -> str:
     return 'http://' + host_addr + ':' + str(port_no) + '/' + queries
 
-def get_request_path(request_url: str):
+def get_request_path(request_url: str) -> str:
     path_extract = urlparse(request_url).path
 
     if not path_extract:
@@ -14,7 +14,7 @@ def get_request_path(request_url: str):
     path = path_extract
     return path
 
-def get_my_ip():
+def get_my_ip() -> str:
     '''
         Function: get_localhost_addr() - determines the localhost ip address by pinging to Google's primary DNS server
         Parameters: none

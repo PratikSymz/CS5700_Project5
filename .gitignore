@@ -1,6 +1,4 @@
 .DS_store
 .vscode/
 bin/
-utils/
 __pycache__/
-http_server/__pycache__/
