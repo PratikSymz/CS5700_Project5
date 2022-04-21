@@ -103,11 +103,17 @@ class CacheManager:
 
 
 class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
-    # Initialize the LRU cache
+    # Initialize the Wiki query cache
     global cm
     cm = CacheManager()
     
     def do_GET(self) -> None:
+        '''
+            Function: do_GET() - this method is responsible for the GET request handling of the HTTP server. 
+            Parameters: none
+            Returns: none
+        '''
+
         ''' CDN HTTP Handler:
             1. If query path IN cache
                 return the cached response
