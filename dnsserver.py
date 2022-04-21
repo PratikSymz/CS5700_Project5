@@ -1,5 +1,5 @@
 import argparse
-import dnslib
+from dnslib import *
 import socket
 import sys
 
@@ -56,8 +56,7 @@ class DNSServer:
         )
         # if qtype == 1 it is an A record
         if question_type == 1 and str(question_name)[:-1] == self.NAME:
-            print('Sending response to client\n')
-            self.udp_socket.sendto(response.pack(), addr)
+            return response.pack()
 
     def run(self):
         '''
@@ -78,7 +77,10 @@ class DNSServer:
         while True:
             data, addr = self.udp_socket.recvfrom(self.BUFFER)
             # parse dig query
-            self.parse_dig_query(data, addr)
+            dig_response = self.parse_dig_query(data, addr)
+            # send response
+            print('Sending response to client\n')
+            self.udp_socket.sendto(dig_response, addr)
 
         # ? close socket - this won't get reached because of infinite loop
         # self.udp_socket.close()
