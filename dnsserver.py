@@ -36,29 +36,27 @@ class DNSServer:
         Return: none
         '''
         # parse dig query
-        dig_query = dnslib.DNSRecord.parse(data)
-        print('incoming:\n', dig_query)
+        dig_query = DNSRecord.parse(data)
+        # print('incoming:\n', dig_query, "\n")
+        # print(f'addr: {addr}\n\n')
 
         question_name = dig_query.q.qname
         question_type = dig_query.q.qtype
-        print(f'Question ID: {question_name}')
+        print(f'Question ID: {question_name}\n')
         message_id = dig_query.header.id
-        print(f'Message ID: {message_id}')
 
         # create response
-        response = dnslib.DNSRecord(
-            dnslib.DNSHeader(id=message_id, qr=1, aa=1, ra=1),
-            q=dnslib.DNSQuestion(dig_query.q.qname, dig_query.q.qtype, dig_query.q.qclass),
-            a=dnslib.RR(
-                rdata=dnslib.A(addr[0])
+        response = DNSRecord(
+            DNSHeader(id=message_id, qr=1, aa=1, ra=1),
+            q=DNSQuestion(dig_query.q.qname, dig_query.q.qtype, dig_query.q.qclass),
+            a=RR(
+                dig_query.q.qname,
+                rdata=A(addr[0]) # TODO replace with ip of replica or origin server
             )
         )
-        print('question:\n', response.q)
-        print('answer:\n', response.a)
         # if qtype == 1 it is an A record
         if question_type == 1 and str(question_name)[:-1] == self.NAME:
-            print('Sending response to client')
-            # print(dnslib.DNSRecord.parse(response.pack()) == str(response))
+            print('Sending response to client\n')
             self.udp_socket.sendto(response.pack(), addr)
 
     def run(self):
