@@ -1,6 +1,6 @@
 .DS_store
 .vscode/
 bin/
-http_server_alt/
-http_server_test.py
 utils/
+__pycache__/
+http_server/__pycache__/
