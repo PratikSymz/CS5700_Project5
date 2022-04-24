@@ -18,6 +18,12 @@ BUFFER_SIZE: int = 4096
 # Message encode and decode format
 FORMAT: str = 'utf-8'
 
+# Set the CDN and Origin server port and hostname, repectively
+global http_port
+global origin_hostname
+http_port: int = 8080
+origin_hostname: str = 'cs5700cdnorigin.ccs.neu.edu'
+
 class CacheManager:
     def __init__(self, origin_addr='', origin_port=0):
         self.origin_addr = origin_addr
@@ -32,29 +38,25 @@ class CacheManager:
     def load_popularity_data(self) -> None:
         '''
             Function: load_popularity_data() - this method is responsible for loading the cache dictionary with the HTML data of the most popular Wikipedia queries.
-                The method firstly reads the wiki queries from the pageviews dump CSV file and sends a GET request for the queries to the origin server. 
-                The origin server response is stored in the cache for the corresponding search query. The cache is filled until it reaches thes storage limit of 20MB.
-                We implement a compression and decompression method as well to increase the amount of cached items.
+                1. reads the wiki queries from the pageviews dump CSV file and sends a GET request for the queries to the origin server. 
+                2. Origin server response is stored in the cache for the corresponding search query. 
+                3. cache is filled until it reaches thes storage limit of 20MB.
+                4. compression and decompression method is implemented to increase the amount of cached responses.
             Parameters: none
             Returns: none
         '''
         # Open CSV file
-        with open('http_server/pageviews_dump.csv', 'r') as csv_file:
+        with open('pageviews_dump.csv', 'r') as csv_file:
             # Instantiate the CSV reader
             csv_reader = csv.reader(csv_file, quotechar='"', delimiter=',')
             # Read the line items
             for line_item in csv_reader:
-                ''' # TODO: Remove this comment
-                Re: CSV file Format, there are two escape mechanisms you need to be aware of:
-                    If a field contains a , character, the whole field is escaped between a pair of " characters.
-                    If a "-escaped field internally contains a "character, the internal" character is expanded to "".
-                '''
                 # Perform a check whether the cache size has reached the limit. If not, continue filling.
                 if (self.get_cache_size(self.CACHE) < CACHE_LIMIT):
                     # Download data from the origin server and save it in the cache in order of the popularity hits
                     query = line_item[0]
                     # Build the origin server GET request url
-                    origin_request_url = utils.build_request_URL(args.origin_hostname, ORIGIN_PORT, query)
+                    origin_request_url = utils.build_request_URL(origin_hostname, ORIGIN_PORT, query)
                     # Send GET request to the origin server and receive response
                     response = requests.get(origin_request_url)
                     
@@ -109,59 +111,57 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
     
     def do_GET(self) -> None:
         '''
-            Function: do_GET() - this method is responsible for the GET request handling of the HTTP server. 
+            Function: do_GET() - this method is responsible for the GET request management of the HTTP server. The method also manages cache vs. origin server response and error and special HTTP response code handling. It provides the following function:
+                1. IF (query_path = "/grading/beacon")  [Special Case]
+                    reply with HTTP code - 204 (empty response)
+                2. IF (query_path is INVALID)
+                    reply with error response - 400 (bad request)
+                
+                3. IF (query_path in CACHE)
+                    reply with the cached response reducing response time - 200
+                4. IF (query_path not in CACHE)
+                    a. retrieve response from the Origin Server by sending a GET request
+                    b. parse the response and the corresponding code
+                    c. send appropriate response back to the client
             Parameters: none
             Returns: none
         '''
-
-        ''' CDN HTTP Handler:
-            1. If query path IN cache
-                return the cached response
-            
-            2. If query path NOT IN cache
-                a. Send GET request to the ORIGIN server and receive response
-                b. Cache the results IF:
-                    Current cache size < CACHE LIMIT (20MB) and size(Wiki query HTML) < Available Cache space
-                c. Otherwise, evict the least recently accessed item from the LRU cache tracker and the local cache dir.
-                    Add the new item to the local cache dir and the LRU cache dir
-        '''
         # Check if current path url in cache
         try:
-            # Validate the path
+            # Validate the path (Special Case)
             if (self.path == '/grading/beacon'):
                 # Build the HTTP response headers
                 self.send_response(204)
                 self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
                 self.end_headers()
                 # Send the empty response to the client
-                self.wfile.write(b'')   # ! Send something
+                self.wfile.write(b'')   # TODO: Send something
             
             else:
-                print(self.path)
-                print(self.path.split('/'))
-
                 if (len(self.path.split('/')) > 2):
                     self.send_error(400, 'Bad request')    # Bad Request
 
+                # Parse the client search query
                 query = self.path.split('/')[-1]
-                global cm
 
+                global cm
                 if query in cm.CACHE.keys():
                     # Extract the cached response
-                    cached_response = cm.CACHE.get(query)   # Compressed
-                    response = zlib.decompress(cached_response)
+                    cached_response = cm.CACHE.get(query)   # Compressed response
+                    response = zlib.decompress(cached_response)    # Decompress response
 
                     # Build the HTTP response headers
                     self.send_response(200)
                     self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
                     self.end_headers()
                     # Send the cached response to the client
-                    self.wfile.write(response)  # ! Check this
+                    self.wfile.write(response)
 
                 # Current path url not in cache
                 else:
                     # Build the origin server GET request url
-                    origin_request_url = utils.build_request_URL('cs5700cdnorigin.ccs.neu.edu', 8080, query)
+                    global args
+                    origin_request_url = utils.build_request_URL(origin_hostname, 8080, query)
                     # Send GET request to the origin server and receive response
                     response = requests.get(origin_request_url)
                     
@@ -196,7 +196,7 @@ def start_CDN_server() -> None:
     my_IP = utils.get_my_ip()
     # Instantiate the HTTP server, with the CDN IP address and port number 
     # and the HTTP request handler class managing the GET requests
-    http_server = HTTPServer((my_IP, 8080), CDNHTTPRequestHandler)
+    http_server = HTTPServer((my_IP, http_port), CDNHTTPRequestHandler)
     # Run the HTTP server
     http_server.serve_forever()
 
@@ -210,5 +210,9 @@ if __name__ == "__main__":
     parser.add_argument('-o', dest='origin_hostname', type=str, action='store', help='<Origin Hostname>')
     args = parser.parse_args()
 
+    # Extract the input HTTP port and Origin Server hostname
+    http_port = args.http_port
+    origin_hostname = args.origin_hostname
+    
     # Start the CDN HTTP Server
     start_CDN_server()
