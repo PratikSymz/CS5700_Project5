@@ -65,7 +65,7 @@ class DNSServer(socketserver.UDPServer):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', action='store', type=int, dest='PORT', help='-p <port>')
+    parser.add_argument('-p', action='store', default=40008, type=int, dest='PORT', help='-p <port>')
     parser.add_argument('-n', action='store', type=str, dest='NAME', help='-n <name>')
     args = parser.parse_args()
     dns_server = DNSServer(args.NAME, ('', args.PORT))
