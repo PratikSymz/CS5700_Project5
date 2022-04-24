@@ -1,11 +1,12 @@
-import subprocess
+import subprocess, socketserver
 
-import socketserver
+import utils
 
 class PerfEvalHandler(socketserver.BaseRequestHandler):
     def handle(self) -> None:
         # Retrieve DNS address and ping to the CDN to retrieve latency information
         ip_addr, port = self.client_address
+        print(self.client_address)
         average_latency = self.http_server_latency(ip_addr)
         
         if not average_latency:
@@ -41,5 +42,5 @@ class PerformanceEvaluator:
         server.serve_forever()
 
 if __name__ == "__main__":
-    perf_evaluator = PerformanceEvaluator('172.105.55.115', 40008)
+    perf_evaluator = PerformanceEvaluator('50.116.41.109', 40008)
     perf_evaluator.start_measurement()
