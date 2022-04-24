@@ -2,7 +2,7 @@ import argparse
 import socketserver
 from dnslib import *
 
-DEFAULT_SERVER = '50.116.41.109'
+DEFAULT_SERVER = ('p5-http-a.5700.network', '50.116.41.109')
 BUFFER = 1024
 
 class DigQuery():
@@ -12,6 +12,7 @@ class DigQuery():
         Params: packet - tuple of (data, address)
         Return: none
         '''
+        """ Reference: www.zytrax.com/books/dns/ch15/ """
         # parse dig query
         dig_query = DNSRecord.parse(data)
 
@@ -26,8 +27,8 @@ class DigQuery():
             DNSHeader(id=message_id, qr=1, aa=1, ra=1),
             q=DNSQuestion(dig_query.q.qname, dig_query.q.qtype, dig_query.q.qclass),
             a=RR(
-                dig_query.q.qname,
-                rdata=A(DEFAULT_SERVER) # TODO replace with ip of replica or origin server
+                DEFAULT_SERVER[0],
+                rdata=A(DEFAULT_SERVER[1]) # TODO replace with ip of replica or origin server
             )
         )
         # if qtype == 1 it is an A record
