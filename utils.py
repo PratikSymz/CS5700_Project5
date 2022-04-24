@@ -1,10 +1,11 @@
 from urllib.parse import urlparse
+import socket
 
 
 def build_request_URL(host_addr: str, port_no: int, queries: str) -> str:
-    return 'http://' + host_addr + ':' + str(port_no) + queries
+    return 'http://' + host_addr + ':' + str(port_no) + '/' + queries
 
-def get_request_path(request_url: str):
+def get_request_path(request_url: str) -> str:
     path_extract = urlparse(request_url).path
 
     if not path_extract:
@@ -13,6 +14,20 @@ def get_request_path(request_url: str):
     path = path_extract
     return path
 
+def get_my_ip() -> str:
+    '''
+        Function: get_localhost_addr() - determines the localhost ip address by pinging to Google's primary DNS server
+        Parameters: none
+        Returns: the localhost ip address
+    '''
+    host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    host_socket.connect(('8.8.8.8', 80))
+    
+    # returns the localhost name: (IP Address, Port No.)
+    localhost = host_socket.getsockname()
+    host_socket.close()
+
+    return localhost[0]
     
 def write_to_file(file_name: str, content: str) -> None:
     '''
