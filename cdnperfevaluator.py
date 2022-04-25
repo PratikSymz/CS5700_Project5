@@ -46,19 +46,19 @@ def http_server_latency(ip_address: str) -> str:
     '''
         Utilize Scamper tool to get the latency statistics by making 1 probe to the CDN servers
     '''
-    scamper_cmd = "sudo scamper -c 'ping -c 1 -O nosrc -S {}' -i {}".format('59.101.231.57', ip_address)
-    scamper_response = subprocess.getoutput(scamper_cmd)# .splitlines()[-1]
+    scamper_cmd = "sudo scamper -c 'ping -c 1' -i {}".format(ip_address)
+    scamper_response = subprocess.getoutput(scamper_cmd).splitlines()[-1]
 
     if not scamper_response:
         print('Unable to run Scamper...')
         return ''
     
     # Parse Scamper response
-    #start_idx = scamper_response.find('=') + 2
-    #end_idx = -3
-    #minimum, average, maximum, standard_dev = scamper_response[start_idx : end_idx].split('/')
+    start_idx = scamper_response.find('=') + 2
+    end_idx = -3
+    minimum, average, maximum, standard_dev = scamper_response[start_idx : end_idx].split('/')
     
-    return scamper_response
+    return average
 
 if __name__ == "__main__":
     # perf_evaluator = PerformanceEvaluator(40008)
