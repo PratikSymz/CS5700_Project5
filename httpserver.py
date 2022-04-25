@@ -1,9 +1,12 @@
-import csv, argparse, sys, zlib
+import csv, argparse, sys, zlib, logging
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 
 import utils
+
+'''  Set the logging parameters'''
+logging.basicConfig(filename='http_server.log', format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
 
 
 ''' Constant set of fields to use in HTTP requests '''
@@ -130,15 +133,17 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             # Validate the path (Special Case)
             if (self.path == '/grading/beacon'):
+                logging.debug(f'Response code: NO CONTENT(204)')
                 # Build the HTTP response headers
                 self.send_response(204)
                 self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
                 self.end_headers()
                 # Send the empty response to the client
-                self.wfile.write(b'')   # TODO: Send something
+                self.wfile.write(f'Response code: NO CONTENT(204)'.encode())   # TODO: Send something
             
             else:
                 if (len(self.path.split('/')) > 2):
+                    logging.debug(f'Response code: BAD REQUEST(400)')
                     self.send_error(400, 'Bad request')    # Bad Request
 
                 # Parse the client search query
@@ -154,6 +159,9 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
                     self.end_headers()
+                    # log response
+                    response_size = sys.getsizeof(response) / (1000 * 1000)
+                    logging.debug(f'Response Size: {response_size}')
                     # Send the cached response to the client
                     self.wfile.write(response)
 
@@ -167,6 +175,7 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                     
                     # Check for content not found
                     if (response.status_code != 200):
+                        logging.debug(f'Response code: NOT FOUND({response.status_code})')
                         self.send_error(404, 'Not Found')    # Not found
                     
                     else:
@@ -178,6 +187,7 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                         self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
                         self.end_headers()
                         # Send the origin response to the client
+                        logging.debug(f'Response code: NOT FOUND({response.status_code})')
                         self.wfile.write(origin_response)
 
         except requests.exceptions.RequestException as error:
