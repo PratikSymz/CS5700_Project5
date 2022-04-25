@@ -36,38 +36,40 @@ class DigQuery():
         if question_type == 1:
             return response.pack()
 
-class RequestHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        data = self.request[0].strip()
-        socket = self.request[1]
-        print(f'client addr: {self.client_address}\n')
-        dig_response = DigQuery().parse_dig_query(data)
-        print(f'\nresponse: {dig_response}\n\n')
-        print('Sending response to client\n')
-        socket.sendto(dig_response, self.client_address)
+    def get_distance(self, lat1, lon1, lat2, lon2):
+        '''
+        Function: get_distance - calculates distance between two points
+        Params: lat1, lon1, lat2, lon2 - floats
+        Return: distance - float
+        '''
+        # convert to radians
+        lat1 = math.radians(lat1)
+        lon1 = math.radians(lon1)
+        lat2 = math.radians(lat2)
+        lon2 = math.radians(lon2)
 
+        # haversine formula
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        r = 6371
+
+        return c * r
 
 class DNSServer(socketserver.UDPServer):
     def __init__(self, hostname, my_addr, request_handler = RequestHandler):
         # Initialize UDPServer
         socketserver.UDPServer.__init__(self, my_addr, request_handler)
+        print(f'server address: {self.server_address}')
 
         self.hostname = hostname
         self.buffer = 1024
-
-        # replica servers: key: name, values: 0 - ip, 1 - geolocation lat/lon
-        self.replicas = {'p5-http-a.5700.network': ('50.116.41.109', [33.74831,-84.39111]),     # Atlanta, GA
-                         'p5-http-b.5700.network': ('45.33.50.187', [37.55148,-121.98330]),     # Fremont, CA
-                         'p5-http-c.5700.network': ('194.195.121.150', [-33.86960,151.20691]),  # Sydney, Australia
-                         'p5-http-d.5700.network': ('172.104.144.157', [50.11208,8.68341]),     # Frankfurt, Germany
-                         'p5-http-e.5700.network': ('172.104.110.211', [35.68408,139.80885]),   # Tokyo, Japan
-                         'p5-http-f.5700.network': ('88.80.186.80', [51.50643,-0.12719]),       # London, UK
-                         'p5-http-g.5700.network': ('172.105.55.115', [19.14045,72.88235])}     # Mumbai, India
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', action='store', default=40008, type=int, dest='PORT', help='-p <port>')
     parser.add_argument('-n', action='store', type=str, dest='NAME', help='-n <name>')
     args = parser.parse_args()
-    dns_server = DNSServer(args.NAME, ('', args.PORT))
+    dns_server = DNSServer(args.NAME, (utils.get_my_ip(), args.PORT))
     dns_server.serve_forever()
