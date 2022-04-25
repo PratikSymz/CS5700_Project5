@@ -1,49 +1,56 @@
 #!/bin/bash
 
-# hosts
+# Hostname list
 DNSHOST=p5-dns.5700.network
-HTTPHOSTS=(p5-http-a.5700.network)
+HTTPHOSTS=(p5-http-a.5700.network p5-http-b.5700.network p5-http-c.5700.network p5-http-d.5700.network p5-http-e.5700.network p5-http-f.5700.network p5-http-g.5700.network)
 
+# Set of constants
+VERSION='date +"%m-%d-%Y %H:%M"'
+DNS='dns_server'
+HTTP='http_server'
+DNSDIR=$DNS-$VERSION
+HTTPDIR=$HTTP-$VERSION
+
+# Extract the argument parameters
 while getopts p:o:n:u:i: args
 do
 	case $args in
 		p)
 			port=$OPTARG
-			#echo "port = " $port
 			;;
 		o)
 			origin=$OPTARG
-			#echo "origin = " $origin
 			;;
 		n)
 			name=$OPTARG
-			#echo "name = " $name
 			;;
 		u)
 			username=$OPTARG
-			echo "username = " $username
 			;;
 		i)
 			keyfile=$OPTARG
-			echo "keyfile = " $keyfile
 			;;
 		?)
 			echo "usage: ./deployCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>"
 			exit 1
 			;;
-		esac
+	esac
 done
 
-echo "Deploying replica server... ..."
-
-for host in $HTTPHOSTS
+echo "Deploying replica server..."
+for host in ${HTTPHOSTS[@]};
 do
-	echo "Deploying host: " $username@$host
-	# ssh -i $keyfile $username@$host "rm httpserver"
-	ssh -i $keyfile $username@$host "mkdir content"
-	scp -i $keyfile httpserver httpserver.py utils.py $username@$host:~
+	echo "Deploying CDN Server at $username@$host..."
+	# Remove existing file directory and create a new one
+	ssh -i $keyfile $username@$host "rm -rf ~/$HTTP-*; mkdir ~/$HTTPDIR/"
+	# Copy over the HTTP server files
+	scp -i $keyfile httpserver httpserver.py utils.py $username@$host:~/$HTTPDIR/
 done
 
-echo "Deploying DNS server at $username@$DNSHOST... ..."
-scp -i $keyfile dnsserver dnsserver.py utils.py $username@$DNSHOST:~
-
+echo "Deploying DNS server at $username@$DNSHOST..."
+# Remove existing file directory and create a new one
+ssh -i $keyfile $username@$host "rm -rf ~/$DNS-*; mkdir ~/$DNSDIR/"
+# Copy over the DNS server files
+scp -i $keyfile dnsserver dnsserver.py utils.py $username@$DNSHOST:~/$DNSDIR/
+# Download the GeoIP database
+ssh -i $keyfile $username@$host "cd $DNSDIR; wget https://www.dropbox.com/s/adifumpc5fb18y4/geoip.zip?dl=0; unzip geoip.zip; rm geoip.zip"
