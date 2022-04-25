@@ -2,9 +2,11 @@ import argparse
 import utils
 import socketserver
 from dnslib import *
-import maxminddb
 import math
+import sys
 
+sys.path.append(os.path.dirname('./vendor/geoipdb'))
+import geoipdb
 
 DEFAULT_SERVER = ('p5-http-a.5700.network', '50.116.41.109')
 BUFFER = 1024
@@ -19,7 +21,7 @@ replicas = {'p5-http-a.5700.network': socket.gethostbyname('p5-http-a.5700.netwo
 
 class GeoIP:
     def __init__(self):
-        self.reader = maxminddb.open_database('GeoLite2-City.mmdb')
+        self.reader = geoipdb.open_database('GeoLite2-City.mmdb')
 
     def get_location(self, ip):
         response = self.reader.get(ip)
