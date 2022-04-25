@@ -8,30 +8,22 @@ import math
 
 DEFAULT_SERVER = ('p5-http-a.5700.network', '50.116.41.109')
 BUFFER = 1024
-# replica servers: key: name, values: 0 - ip, 1 - geolocation lat/lon
-replicas = {'p5-http-a.5700.network':
-                (socket.gethostbyname('p5-http-a.5700.network'), [33.74831,-84.39111]),     # Atlanta, GA
-            'p5-http-b.5700.network':
-                (socket.gethostbyname('p5-http-b.5700.network'), [37.55148,-121.98330]),     # Fremont, CA
-            'p5-http-c.5700.network':
-                (socket.gethostbyname('p5-http-c.5700.network'), [-33.86960,151.20691]),  # Sydney, Australia
-            'p5-http-d.5700.network':
-                (socket.gethostbyname('p5-http-d.5700.network'), [50.11208,8.68341]),     # Frankfurt, Germany
-            'p5-http-e.5700.network':
-                (socket.gethostbyname('p5-http-e.5700.network'), [35.68408,139.80885]),   # Tokyo, Japan
-            'p5-http-f.5700.network':
-                (socket.gethostbyname('p5-http-f.5700.network'), [51.50643,-0.12719]),       # London, UK
-            'p5-http-g.5700.network':
-                (socket.gethostbyname('p5-http-g.5700.network'), [19.14045,72.88235])}     # Mumbai, India
+
+replicas = {'p5-http-a.5700.network': socket.gethostbyname('p5-http-a.5700.network'),
+                'p5-http-b.5700.network': socket.gethostbyname('p5-http-b.5700.network'),
+                'p5-http-c.5700.network': socket.gethostbyname('p5-http-c.5700.network'),
+                'p5-http-d.5700.network': socket.gethostbyname('p5-http-d.5700.network'),
+                'p5-http-e.5700.network': socket.gethostbyname('p5-http-e.5700.network'),
+                'p5-http-f.5700.network': socket.gethostbyname('p5-http-f.5700.network'),
+                'p5-http-g.5700.network': socket.gethostbyname('p5-http-g.5700.network')}
 
 class GeoIP:
     def __init__(self):
         self.reader = maxminddb.open_database('GeoLite2-City.mmdb')
 
     def get_location(self, ip):
-        # TODO update ip param for deployment
-        response = self.reader.get('194.195.121.150') # hardcoded for testing
-        print(f'city: {response["city"]["names"]["en"]}\n')
+        response = self.reader.get(ip)
+        # print(f'city: {response["city"]["names"]["en"]}')
         latitude, longitude = response['location']['latitude'], response['location']['longitude']
         return latitude, longitude
 
@@ -58,21 +50,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
         question_type = dig_query.q.qtype
         message_id = dig_query.header.id
 
-        # TODO find best replica
-        geo_ip = GeoIP()
-        client_lat, client_lon = geo_ip.get_location(self.client_address[0])
-        nearest_replica = ''
-        min_distance = float('inf')
-        for replica in replicas.keys():
-            replica_lat = replicas[replica][1][0]
-            replica_lon = replicas[replica][1][1]
-            # get distance between client and replica
-            distance = self.get_distance(replica_lat, replica_lon, client_lat, client_lon)
-            # print(f'Distance between replica {replica} and client: {distance}')
-            if distance < min_distance:
-                min_distance = distance
-                nearest_replica = replica
-        print(f'Nearest replica: {nearest_replica}')
+        # get nearest replica
+        nearest_replica = self.find_nearest_replica(self.client_address[0])
 
         # create response
         response = DNSRecord(
@@ -80,13 +59,30 @@ class RequestHandler(socketserver.BaseRequestHandler):
             q=DNSQuestion(dig_query.q.qname, dig_query.q.qtype, dig_query.q.qclass),
             a=RR(
                 nearest_replica,
-                rdata=A(replicas[nearest_replica][0])
+                rdata=A(replicas[nearest_replica])
             )
         )
         # if qtype == 1 it is an A record
         # ? do we need to check if str(question_name)[:-1] == hostname ???
         if question_type == 1:
             return response.pack()
+
+    def get_nearest_replica(self, client_addr):
+        geo_ip = GeoIP()
+        client_lat, client_lon = geo_ip.get_location('194.195.121.150') # TODO change back to self.client_address[0]
+        nearest_replica = ''
+        min_distance = float('inf')
+        for replica in replicas.keys():
+            lat, lon = geo_ip.get_location(replicas[replica])
+            print(f'replica location: {lat}, {lon}')
+            # get distance between client and replica
+            distance = self.get_distance(lat, lon, client_lat, client_lon)
+            # print(f'Distance between replica {replica} and client: {distance}\n')
+            if distance < min_distance:
+                min_distance = distance
+                nearest_replica = replica
+        # print(f'Nearest replica: {nearest_replica}')
+        return nearest_replica
 
     def get_distance(self, lat1, lon1, lat2, lon2):
         '''
