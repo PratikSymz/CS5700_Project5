@@ -51,7 +51,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         message_id = dig_query.header.id
 
         # get nearest replica
-        nearest_replica = self.find_nearest_replica(self.client_address[0])
+        nearest_replica = self.get_nearest_replica(self.client_address[0])
 
         # create response
         response = DNSRecord(
