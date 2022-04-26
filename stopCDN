@@ -39,11 +39,13 @@ echo "Stopping replica server... ..."
 for host in $HTTPHOSTS
 do
 	echo "Stopping host: " $username@$host
-	ssh -i $keyfile $username@$host "killall python"
+	ssh -i $keyfile $username@$host "killall -u $username httpserver"
+	ssh -i $keyfile $username@$DNSHOST "killall -u $username python3"
+	
 	#remove cache contents
-	ssh -i $keyfile $username@$host "rm -r content"
+	#ssh -i $keyfile $username@$host "rm -r content"
 done
 
 echo "Stopping DNS server at $username@$DNSHOST... ..."
-ssh -i $keyfile $username@$DNSHOST "killall python"
-
+ssh -i $keyfile $username@$DNSHOST "killall -u $username dnsserver"
+ssh -i $keyfile $username@$DNSHOST "killall -u $username python3"
