@@ -2,3 +2,8 @@
 .vscode/
 bin/
 __pycache__/
+http_server.log
+pageviews.csv
+test.py
+cache/
+cdnperfevaluator.py

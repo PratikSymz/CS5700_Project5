@@ -1,0 +1,92 @@
+import argparse, csv, os, zlib
+import requests
+import utils
+
+
+# Set the cache size limit in the replica server: 20MB
+CACHE_LIMIT: int = 20000000
+
+# Set the Origin server port no.
+ORIGIN_PORT: int = 8080
+
+class OriginCacher:
+    '''
+        Helper class responsible for managing caching during CDN deployment time, by creating a local cache directory.
+        This local cache can referred during runtime to load the cached data in higher performance data structure to provide cached responses to improve response time.
+    '''
+    def __init__(self, origin_hostname: str) -> None:
+        # Set the Origin server hostname
+        self.hostname = origin_hostname
+
+        # The server cache directory
+        self.CACHE = os.getcwd() + '/cache'
+
+        # The available cache during execution -> starts with the cache limit of 20MB
+        self.available_cache = CACHE_LIMIT
+
+    def store_popularity_data(self) -> None:
+        '''
+            Function: store_popularity_data() - this method is responsible for loading the cache dictionary with the HTML data of the most popular Wikipedia queries.
+                1. Reads the wiki queries from the pageviews dump CSV file and sends a GET request for the queries to the origin server. 
+                2. Origin server response is stored in the local cache directory corresponding to the search query. 
+                3. Cache is filled until it reaches the storage limit of 20MB.
+                4. Compression and decompression method is implemented to improve the amount of cached responses.
+            Parameters: none
+            Returns: none
+        '''
+        # Create the cache directory
+        if not os.path.exists(self.CACHE):
+            os.mkdir(self.CACHE)
+        
+        # Open the query popularity CSV dump
+        with open('pageviews.csv', 'r') as csv_file:
+            # Instantiate the CSV reader
+            csv_reader = csv.reader(csv_file, quotechar='"', delimiter=',')
+            # Read the line items
+            for line_item in csv_reader:
+                # Read the line items from the CSV in order, and send a request to the origin server for the HTTP response.
+                # Perform a check whether the cache size has reached its limit. If not, send the HTTP request
+                if (self.available_cache > 0):
+                    # Download data from the origin server and save it in the cache in order of the popularity hits
+                    # Extract the wiki query
+                    wiki_query = line_item[0]
+                    # Build the GET request url
+                    origin_request_url = utils.build_request_URL(self.hostname, ORIGIN_PORT, wiki_query)
+                    # Send GET request to the origin server and receive response
+                    response = requests.get(origin_request_url)
+                    
+                    # Check for successful HTTP response code. Only cache the queries for which NO server error has been received.
+                    # 200 - Response OK
+                    if (response.status_code in range(200, 299 + 1)):
+                        # Compress the origin server's response
+                        compressed_response = zlib.compress(response.content)
+
+                        # Check if adding the response to the cache overloads the memory or not during runtime
+                        if (self.available_cache - len(compressed_response) <= 0):
+                            break   # Halt caching due to avoid memory overflow
+
+                        # Cache the compressed origin server response in the local cache directory
+                        filename = os.path.join(self.CACHE, wiki_query)
+                        utils.write_to_file(filename, compressed_response)
+                        # Update the available cache
+                        self.available_cache -= len(compressed_response)
+
+        # Remove the CSV file from the server directory
+        # TODO: Check path and delete file
+        os.remove(os.path.join(self.CACHE, 'pageviews.csv'))
+
+if __name__ == "__main__":
+    ''' Script argument parser '''
+    parser = argparse.ArgumentParser(description='Origin Cacher')
+
+    # Store Origin server hostname and port no. from terminal
+    parser.add_argument('-o', dest='origin_hostname', type=str, action='store', help='<Origin Hostname>')
+    args = parser.parse_args()
+
+    # Extract the arguments
+    origin_hostname = args.origin_hostname
+
+    # Initiate deployment period caching
+    cacher = OriginCacher(origin_hostname)
+    # Load the popularity data in the cache directory
+    cacher.store_popularity_data()
