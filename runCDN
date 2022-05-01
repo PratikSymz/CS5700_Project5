@@ -1,47 +1,53 @@
 #!/bin/bash
 
-# hosts
+# Hostname list
 DNSHOST=p5-dns.5700.network
-HTTPHOSTS=(p5-http-a.5700.network)
+HTTPHOSTS=(p5-http-a.5700.network p5-http-b.5700.network p5-http-c.5700.network p5-http-d.5700.network p5-http-e.5700.network p5-http-f.5700.network p5-http-g.5700.network)
 
+# HTTP and DNS server directory names
+DNSDIR='dns_server'
+HTTPDIR='http_server'
+
+# Extract the argument parameters
 while getopts p:o:n:u:i: args
 do
 	case $args in
 		p)
 			port=$OPTARG
-			echo "port = " $port
 			;;
 		o)
 			origin=$OPTARG
-			echo "origin = " $origin
 			;;
 		n)
 			name=$OPTARG
-			echo "name = " $name
 			;;
 		u)
 			username=$OPTARG
-			echo "username = " $username
 			;;
 		i)
 			keyfile=$OPTARG
-			echo "keyfile = " $keyfile
 			;;
 		?)
-			echo "usage: ./deployCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>"
+			echo "usage: ./runCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>"
 			exit 1
 			;;
-		esac
+	esac
 done
 
-echo "Running replica server... ..."
-
-for host in $HTTPHOSTS
+# Start the CDN servers
+echo "Initiating CDN servers..."
+for host in "${HTTPHOSTS[@]}"
 do
-	echo "Running host: " $username@$host
-	ssh -i $keyfile $username@$host "./httpserver -p $port -o $origin"
+	echo "Starting CDN server at $username@$host..."
+	# Remove the pageviews.csv and httpcacher.py files not needed during running phase
+	ssh -i $keyfile $username@$host "cd $HTTPDIR; rm -f pageviews.csv httpcacher.py"
+	# Run the script to start the CDN server and respond to client requests for content
+	ssh -i $keyfile $username@$host "cd $HTTPDIR; ./httpserver -p $port -o $origin"
+	echo "RUNNING: CDN server at $username@$host..."
 done
 
-echo "Running DNS server at $username@$DNSHOST... ..."
-ssh -i $keyfile $username@$DNSHOST "./dnsserver -p $port -n $name"
-
+# Start the DNS server
+echo "Starting DNS server at $username@$DNSHOST..."
+# Run the script to start the DNS server and respond to client requests for dns lookups
+ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; ./dnsserver -p $port -n $name"
+echo "RUNNING: DNS server at $username@$DNSHOST..."

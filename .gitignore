@@ -2,4 +2,5 @@
 .vscode/
 bin/
 __pycache__/
-GeoLite2-City.mmdb
+cdnperfevaluator_main.py
+httpserver_main.py
