@@ -1,5 +1,4 @@
 import argparse, sys, zlib, logging, os
-import socket
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 import utils
@@ -104,10 +103,10 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                 # Invalid path
                 if (len(self.path.split('/')) > 2):
                     # TODO: remove logs
-                    logging.debug(f'404: BAD REQUEST')
+                    logging.debug('400: BAD REQUEST')
 
                     # Respond the client with an invalid path error
-                    self.send_error(400, '404: BAD REQUEST')    # Bad Request
+                    self.send_error(400, '400: BAD REQUEST')    # Bad Request
                 
                 # Path is valid
                 else:
@@ -122,6 +121,9 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                         cached_response = cm.CACHE.get(query)   # Compressed response
                         # Decompress the cached response
                         response = zlib.decompress(cached_response)    #type:ignore
+
+                        # TODO: remove logs
+                        logging.debug('200: SUCCESS from CACHE')
 
                         # Build the HTTP response headers
                         self.send_response(200)
