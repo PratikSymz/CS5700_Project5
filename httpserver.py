@@ -1,4 +1,4 @@
-import argparse, sys, zlib, logging, os
+import argparse, zlib, logging, os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 import utils
