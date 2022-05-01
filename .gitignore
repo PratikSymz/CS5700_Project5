@@ -2,5 +2,4 @@
 .vscode/
 bin/
 __pycache__/
-pageviews.csv
 test.py
