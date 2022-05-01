@@ -2,4 +2,8 @@
 .vscode/
 bin/
 __pycache__/
+<<<<<<< HEAD
 test.py
+=======
+test.py
+>>>>>>> main
