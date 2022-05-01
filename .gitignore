@@ -2,6 +2,4 @@
 .vscode/
 bin/
 __pycache__/
-cdnperfevaluator_main.py
-httpserver_main.py
 test.py
