@@ -1,0 +1,108 @@
+import argparse, math, socketserver, sys, utils
+from dnslib import *
+
+sys.path.append(os.path.dirname('./vendor/geoipdb'))
+import geoipdb
+
+servers = {'p5-http-a.5700.network': socket.gethostbyname('p5-http-a.5700.network'),
+            'p5-http-b.5700.network': socket.gethostbyname('p5-http-b.5700.network'),
+            'p5-http-c.5700.network': socket.gethostbyname('p5-http-c.5700.network'),
+            'p5-http-d.5700.network': socket.gethostbyname('p5-http-d.5700.network'),
+            'p5-http-e.5700.network': socket.gethostbyname('p5-http-e.5700.network'),
+            'p5-http-f.5700.network': socket.gethostbyname('p5-http-f.5700.network'),
+            'p5-http-g.5700.network': socket.gethostbyname('p5-http-g.5700.network')}
+
+class GeoIP:
+    def __init__(self):
+        self.reader = geoipdb.open_database('GeoLite2-City.mmdb')
+
+    def get_location(self, ip):
+        data = self.reader.get(ip)
+        lat, lon = data['location']['latitude'], data['location']['longitude']
+        return lat, lon
+
+class RequestHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        data = self.request[0].strip()
+        socket = self.request[1]
+        response = self.process_dig_query(data)
+        socket.sendto(response, self.client_address)
+
+    def process_dig_query(self, data):
+        '''
+        Function: process_dig_query - parses incoming dig queries using dnslib
+        Params: packet - tuple of (data, address)
+        Return: dig response with nearest server address
+        '''
+        """ Reference: www.zytrax.com/books/dns/ch15/ """
+        dig_query = DNSRecord.parse(data)
+
+        qname = dig_query.q.qname
+        qtype = dig_query.q.qtype
+        msg_id = dig_query.header.id
+
+        nearest_server = self.get_nearest_replica(self.client_address[0])
+
+        response = DNSRecord(
+            DNSHeader(id=msg_id, qr=1, aa=1, ra=1),
+            q=DNSQuestion(dig_query.q.qname, dig_query.q.qtype, dig_query.q.qclass),
+            a=RR(
+                nearest_server,
+                rdata=A(servers[nearest_server])
+            )
+        )
+        # if qtype == 1 it is an A record
+        # ? do we need to check if str(question_name)[:-1] == hostname ???
+        if qtype == 1:
+            return response.pack()
+
+    def get_nearest_replica(self, client_addr):
+        # TODO documentation
+        geo_ip = GeoIP()
+        client_lat, client_lon = geo_ip.get_location('194.195.121.150') # TODO replace with client_addr
+        nearest = ''
+        min_dist = float('inf')
+        for r in servers.keys():
+            lat, lon = geo_ip.get_location(servers[r])
+            # distance between client and replica
+            dist = self.get_distance(lat, lon, client_lat, client_lon)
+            # print(f'Distance between replica {replica} and client: {distance}\n')
+            if dist < min_dist:
+                min_dist = dist
+                nearest = r
+        return nearest
+
+    def get_distance(self, lat1, lon1, lat2, lon2):
+        '''
+        Function: get_distance - calculates distance between two points with Haversine formula
+        Params: lat1, lon1 - replica lat/lon, floats
+                lat2, lon2 - client lat/lon, floats
+        Return: distance in km - float
+        '''
+        lat1 = math.radians(lat1)
+        lon1 = math.radians(lon1)
+        lat2 = math.radians(lat2)
+        lon2 = math.radians(lon2)
+
+        # haversine formula
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        r = 6371
+
+        return c * r
+
+class DNSServer(socketserver.UDPServer):
+    def __init__(self, hostname, my_addr, req_handler = RequestHandler):
+        socketserver.UDPServer.__init__(self, my_addr, req_handler)
+        print(f'server addr: {self.server_address}')
+        self.hostname = hostname # ? might need this for dig query
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', action='store', default=40008, type=int, dest='PORT', help='-p <port>')
+    parser.add_argument('-n', action='store', type=str, dest='NAME', help='-n <name>')
+    args = parser.parse_args()
+    dns_server = DNSServer(args.NAME, (utils.get_my_ip(), args.PORT))
+    dns_server.serve_forever()
