@@ -35,22 +35,22 @@ do
 done
 
 # Stop the CDN servers
-echo "Stopping CDN servers..."
+printf "Stopping CDN servers...\n\n"
 for host in "${HTTPHOSTS[@]}"
 do
-	echo "Stopping CDN server at $username@$host..."
+	printf "[Stopping CDN server at $username@$host]...\n"
 	# Stop all running python processes in the servers
-	ssh -i $keyfile $username@$host "cd $HTTPDIR; killall -u $username httpserver"
-	ssh -i $keyfile $username@$DNSHOST "cd $HTTPDIR; killall -u $username python3"
+	ssh -i $keyfile $username@$host "killall -u $username httpserver"
+	ssh -i $keyfile $username@$host "killall -u $username python3"
 	# Remove the HTTP file directory from the server (clean up)
 	ssh -i $keyfile $username@$host "rm -rf ~/$HTTPDIR"
-	echo "STOPPED: CDN server at $username@$host..."
+	printf "STOPPED: CDN server at $username@$host...\n\n"
 done
 
-echo "Stopping DNS server at $username@$DNSHOST..."
+printf "Stopping DNS server at $username@$DNSHOST...\n"
 # Stop all running python processes in the servers
-ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; killall -u $username dnsserver"
-ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; killall -u $username python3"
+ssh -i $keyfile $username@$DNSHOST "killall -u $username dnsserver"
+ssh -i $keyfile $username@$DNSHOST "killall -u $username python3"
 # Remove the DNS file directory from the server (clean up)
 ssh -i $keyfile $username@$DNSHOST "rm -rf ~/$DNSDIR"
-echo "STOPPED: DNS server at $username@$DNSHOST..."
+printf "STOPPED: DNS server at $username@$DNSHOST...\n\n"

@@ -1,21 +1,16 @@
-import argparse, zlib, logging, os
+import argparse, zlib, os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 import utils
 
-'''  Set the logging parameters'''
-logging.basicConfig(filename='http_server.log', format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
-
-''' Set the cache storage limit'''
-CACHE_LIMIT: int = 20000000      # Cache size/CDN server limit: 20MB
 
 ''' Constant set of fields to use in HTTP requests '''
 ORIGIN_PORT: int = 8080
 CONTENT_TYPE_HEADER: str = 'Content-type'
+CONTENT_LENGTH_HEADER: str = 'Content-length'
 CONTENT_TYPE: str = 'text/html'
 
-
-# Set the default CDN port and Origin hostname
+''' Set the default CDN port and Origin hostname '''
 global http_port
 global origin_hostname
 http_port: int = 8080
@@ -49,11 +44,11 @@ class CacheManager:
             # Map the wiki query to it corresponding response
             cache_dict[cached_page] = file.read()
             # Remove the query response from the local directory to prevent memory overflow
-            os.remove(cached_page)
+            os.remove(os.path.join(local_cache, cached_page))
 
         # Remove the local cache directory from the server (clean up)
         # Cached responses now in the dictionary
-        os.remove(local_cache)
+        os.rmdir(local_cache)
 
         return cache_dict
 
@@ -63,8 +58,9 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
         whether their response is retrieved from the cache or the origin server.
     '''
     # Initialize the CacheManager
-    global cm
+    global cm, session
     cm = CacheManager()
+    session = requests.session()
 
     def do_GET(self) -> None:
         '''
@@ -87,24 +83,18 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             # Handle the specified path url for the server
             if (self.path == '/grading/beacon'):
-                # TODO: remove logs
-                logging.debug('204: NO CONTENT')
-
                 # Build the HTTP response headers
                 self.send_response(204)
                 self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
                 self.end_headers()
 
                 # Send response to the client
-                self.wfile.write('204: NO CONTENT'.encode())
+                self.wfile.write('204'.encode())
             
             # Parse and validate the client's request url path
             else:              
                 # Invalid path
                 if (len(self.path.split('/')) > 2):
-                    # TODO: remove logs
-                    logging.debug('400: BAD REQUEST')
-
                     # Respond the client with an invalid path error
                     self.send_error(400, '400: BAD REQUEST')    # Bad Request
                 
@@ -122,12 +112,10 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                         # Decompress the cached response
                         response = zlib.decompress(cached_response)    #type:ignore
 
-                        # TODO: remove logs
-                        logging.debug('200: SUCCESS from CACHE')
-
                         # Build the HTTP response headers
                         self.send_response(200)
                         self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
+                        self.send_header(CONTENT_LENGTH_HEADER, str(len(response)))
                         self.end_headers()
 
                         # Send the cached response to the client
@@ -139,7 +127,7 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                         # Build the origin server GET request url
                         origin_request_url = utils.build_request_URL(origin_hostname, ORIGIN_PORT, query)
                         # Send GET request to the origin server and receive response
-                        response = requests.get(origin_request_url)
+                        response = session.get(origin_request_url)
                         
                         # Response code: OK
                         if (response.status_code in range(200, 299 + 1)):
@@ -149,17 +137,13 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                             # Build the HTTP response headers
                             self.send_response(200)
                             self.send_header(CONTENT_TYPE_HEADER, CONTENT_TYPE)
+                            self.send_header(CONTENT_LENGTH_HEADER, str(len(origin_response)))
                             self.end_headers()
-
-                            # TODO: remove logging
-                            logging.debug(f'SUCCESS({response.status_code})')
 
                             # Send the origin response to the client
                             self.wfile.write(origin_response)
                         
                         else:
-                            # TODO: remove logging
-                            logging.debug(f'FAILED({response.status_code})')
                             # Respond the client with an 404 Not found code
                             self.send_error(404, '404: NOT FOUND')    # Not found
 

@@ -3,8 +3,8 @@ import requests
 import utils
 
 
-# Set the cache size limit in the replica server: 20MB
-CACHE_LIMIT: int = 20000000
+''' Set the cache storage limit'''
+CACHE_LIMIT: int = 18000000      # TODO: Reduce Cache size/CDN server limit: 18MB
 
 # Set the Origin server port no.
 ORIGIN_PORT: int = 8080
@@ -39,6 +39,7 @@ class OriginCacher:
             os.mkdir(self.CACHE)
         
         # Open the query popularity CSV dump
+        session = requests.session()
         with open('pageviews.csv', 'r') as csv_file:
             # Instantiate the CSV reader
             csv_reader = csv.reader(csv_file, quotechar='"', delimiter=',')
@@ -53,13 +54,14 @@ class OriginCacher:
                     # Build the GET request url
                     origin_request_url = utils.build_request_URL(self.hostname, ORIGIN_PORT, wiki_query)
                     # Send GET request to the origin server and receive response
-                    response = requests.get(origin_request_url)
+                    response = session.get(origin_request_url)
                     
                     # Check for successful HTTP response code. Only cache the queries for which NO server error has been received.
                     # 200 - Response OK
                     if (response.status_code in range(200, 299 + 1)):
+                        content = response.content  # response in bytes
                         # Compress the origin server's response
-                        compressed_response = zlib.compress(response.content)
+                        compressed_response = zlib.compress(content)
 
                         # Check if adding the response to the cache overloads the memory or not during runtime
                         if (self.available_cache - len(compressed_response) <= 0):
@@ -71,9 +73,6 @@ class OriginCacher:
                         # Update the available cache
                         self.available_cache -= len(compressed_response)
 
-        # Remove the CSV file from the server directory
-        # TODO: Check path and delete file
-        os.remove(os.path.join(self.CACHE, 'pageviews.csv'))
 
 if __name__ == "__main__":
     ''' Script argument parser '''
