@@ -33,8 +33,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def process_dig_query(self, data):
         '''
         Function: process_dig_query - parses incoming dig queries using dnslib
-        Params: packet - tuple of (data, address)
-        Return: dig response with nearest server address
+        Params:   packet - tuple of (data, address)
+        Return:   dig response with nearest server address
         '''
         """ Reference: www.zytrax.com/books/dns/ch15/ """
         dig_query = DNSRecord.parse(data)
@@ -59,7 +59,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
             return response.pack()
 
     def get_nearest_replica(self, client_addr):
-        # TODO documentation
+        '''
+        Function: get_nearest_replica - finds the server nearest to the client
+        Params:   client_addr - IP address of client
+        Return:   IP address of nearest replica server
+        '''
         geo_ip = GeoIP()
         client_lat, client_lon = geo_ip.get_location(client_addr) # TODO replace with client_addr
         nearest = ''
@@ -77,9 +81,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def get_distance(self, lat1, lon1, lat2, lon2):
         '''
         Function: get_distance - calculates distance between two points with Haversine formula
-        Params: lat1, lon1 - replica lat/lon, floats
-                lat2, lon2 - client lat/lon, floats
-        Return: distance in km - float
+        Params:   lat1, lon1 - replica lat/lon, floats
+                  lat2, lon2 - client lat/lon, floats
+        Return:   distance in km - float
         '''
         lat1 = math.radians(lat1)
         lon1 = math.radians(lon1)
