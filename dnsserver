@@ -54,7 +54,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             )
         )
         # if qtype == 1 it is an A record
-        # ? do we need to check if str(question_name)[:-1] == hostname ???
         if qtype == 1:
             return response.pack()
 
@@ -72,7 +71,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             lat, lon = geo_ip.get_location(servers[r])
             # distance between client and replica
             dist = self.get_distance(lat, lon, client_lat, client_lon)
-            # print(f'Distance between replica {replica} and client: {distance}\n')
             if dist < min_dist:
                 min_dist = dist
                 nearest = r
@@ -103,7 +101,6 @@ class DNSServer(socketserver.UDPServer):
     def __init__(self, hostname, my_addr, req_handler = RequestHandler):
         socketserver.UDPServer.__init__(self, my_addr, req_handler)
         print(f'server addr: {self.server_address}')
-        self.hostname = hostname # ? might need this for dig query
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
