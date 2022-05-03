@@ -78,6 +78,7 @@ class OriginCacher:
         # Close the client session
         session.close()
 
+
 if __name__ == "__main__":
     ''' Script argument parser '''
     parser = argparse.ArgumentParser(description='Origin Cacher')

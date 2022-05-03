@@ -5,3 +5,4 @@ default:
 		chmod +x httpserver
 		chmod +x httpcacher
 		chmod +x dnsserver
+		chmod +x utils.py

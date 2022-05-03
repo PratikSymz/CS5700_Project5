@@ -40,7 +40,7 @@ for host in "${HTTPHOSTS[@]}"
 do
 	printf "[Starting CDN server at $username@$host]...\n"
 	# Remove the pageviews.csv and httpcacher.py files not needed during running phase
-	ssh -i $keyfile $username@$host "cd $HTTPDIR; rm -f pageviews.csv httpcacher.py"
+	ssh -i $keyfile $username@$host "cd $HTTPDIR; rm -f pageviews.csv httpcacher"
 	# Run the script to start the CDN server and respond to client requests for content
 	ssh -i $keyfile $username@$host "cd $HTTPDIR; nohup ./httpserver -p $port -o $origin > /dev/null 2>&1 &"
 	printf "RUNNING: CDN server at $username@$host...\n\n"

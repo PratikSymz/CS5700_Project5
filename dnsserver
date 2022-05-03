@@ -16,7 +16,7 @@ servers = {'p5-http-a.5700.network': socket.gethostbyname('p5-http-a.5700.networ
 
 class GeoIP:
     def __init__(self):
-        self.reader = geoipdb.open_database('GeoLite2-City.mmdb')
+        self.reader = geoipdb.open_database('geoip.mmdb')
 
     def get_location(self, ip):
         data = self.reader.get(ip)
@@ -61,7 +61,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def get_nearest_replica(self, client_addr):
         # TODO documentation
         geo_ip = GeoIP()
-        client_lat, client_lon = geo_ip.get_location('194.195.121.150') # TODO replace with client_addr
+        client_lat, client_lon = geo_ip.get_location(client_addr) # TODO replace with client_addr
         nearest = ''
         min_dist = float('inf')
         for r in servers.keys():

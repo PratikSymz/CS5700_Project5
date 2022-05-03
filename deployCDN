@@ -44,9 +44,9 @@ do
 	# Download the pageviews.csv file
 	ssh -i $keyfile $username@$host "cd $HTTPDIR; wget https://www.dropbox.com/s/tfo6h9jwfvkvcpt/pageviews.csv"
 	# Copy over the HTTP server files
-	scp -i $keyfile httpserver httpserver.py httpcacher.py utils.py $username@$host:~/$HTTPDIR/
+	scp -i $keyfile httpserver httpcacher utils.py $username@$host:~/$HTTPDIR/
 	# Run the HTTP Cacher script to cache the results during the deployment phase
-	ssh -i $keyfile $username@$host "cd $HTTPDIR; python3 ./httpcacher.py -o $origin"
+	ssh -i $keyfile $username@$host "cd $HTTPDIR; ./httpcacher -o $origin"
 	printf "DEPLOYED: CDN Server at $username@$host...\n\n"
 done
 
@@ -55,7 +55,9 @@ printf "Deploying DNS server...\n"
 # Remove existing file directory and create a new one
 ssh -i $keyfile $username@$DNSHOST "rm -rf ~/$DNSDIR; mkdir ~/$DNSDIR/"
 # Copy over the DNS server files
-scp -i $keyfile dnsserver dnsserver.py utils.py $username@$DNSHOST:~/$DNSDIR/
+scp -i $keyfile dnsserver utils.py $username@$DNSHOST:~/$DNSDIR/
 # Download the GeoIP database
-#ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; wget https://www.dropbox.com/s/adifumpc5fb18y4/geoip.zip; unzip geoip.zip; rm -f geoip.zip"
+ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; wget https://www.dropbox.com/s/jj91bijakzzb9sr/geoip.tag.gz; tar -xvzf geoip.tag.gz; rm -f geoip.tag.gz"
+# Download the GeoIP Vendor
+ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; wget https://www.dropbox.com/s/lf9bymoxg5qjoii/vendor.tag.gz; tar -xvzf vendor.tag.gz; rm -f vendor.tag.gz"
 printf "DEPLOYED: DNS Server at $username@$DNSHOST...\n\n"
