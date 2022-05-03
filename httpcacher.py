@@ -4,7 +4,7 @@ import utils
 
 
 ''' Set the cache storage limit'''
-CACHE_LIMIT: int = 18000000      # TODO: Reduce Cache size/CDN server limit: 18MB
+CACHE_LIMIT: int = 20000000      # TODO: Reduce Cache size/CDN server limit
 
 # Set the Origin server port no.
 ORIGIN_PORT: int = 8080
@@ -39,7 +39,7 @@ class OriginCacher:
             os.mkdir(self.CACHE)
         
         # Open the query popularity CSV dump
-        session = requests.session()
+        session = requests.Session()    # Setup a client session with the origin server
         with open('pageviews.csv', 'r') as csv_file:
             # Instantiate the CSV reader
             csv_reader = csv.reader(csv_file, quotechar='"', delimiter=',')
@@ -73,6 +73,8 @@ class OriginCacher:
                         # Update the available cache
                         self.available_cache -= len(compressed_response)
 
+        # Close the client session
+        session.close()
 
 if __name__ == "__main__":
     ''' Script argument parser '''

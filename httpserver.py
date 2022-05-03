@@ -60,7 +60,8 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
     # Initialize the CacheManager
     global cm, session
     cm = CacheManager()
-    session = requests.session()
+    # Setup a client session with the origin server
+    session = requests.Session()
 
     def do_GET(self) -> None:
         '''
@@ -149,6 +150,7 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # Handle HTTP request exceptions
         except requests.exceptions.RequestException as error:
+            session.close()     # Close client session
             raise(error)
 
 def start_CDN_server() -> None:
