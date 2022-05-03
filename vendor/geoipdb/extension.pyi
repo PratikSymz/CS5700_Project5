@@ -2,9 +2,9 @@ from ipaddress import IPv4Address, IPv6Address
 from os import PathLike
 from typing import Any, AnyStr, IO, Mapping, Optional, Sequence, Text, Tuple, Union
 
-from maxminddb import MODE_AUTO
-from maxminddb.errors import InvalidDatabaseError as InvalidDatabaseError
-from maxminddb.types import Record
+from geoipdb import MODE_AUTO
+from geoipdb.errors import InvalidDatabaseError as InvalidDatabaseError
+from geoipdb.types import Record
 
 class Reader:
     closed: bool = ...
