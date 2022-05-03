@@ -6,7 +6,7 @@ import utils
 
 
 ''' Set the cache storage limit'''
-CACHE_LIMIT: int = 20000000      # TODO: Reduce Cache size/CDN server limit
+CACHE_LIMIT: int = 18000000     # Set limit to 18MB
 
 # Set the Origin server port no.
 ORIGIN_PORT: int = 8080
