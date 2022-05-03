@@ -17,11 +17,11 @@ from ipaddress import IPv4Address, IPv6Address
 from os import PathLike
 from typing import Any, AnyStr, IO, Optional, Tuple, Union
 
-from maxminddb.const import MODE_AUTO, MODE_MMAP, MODE_FILE, MODE_MEMORY, MODE_FD
-from maxminddb.decoder import Decoder
-from maxminddb.errors import InvalidDatabaseError
-from maxminddb.file import FileBuffer
-from maxminddb.types import Record
+from geoipdb.const import MODE_AUTO, MODE_MMAP, MODE_FILE, MODE_MEMORY, MODE_FD
+from geoipdb.decoder import Decoder
+from geoipdb.errors import InvalidDatabaseError
+from geoipdb.file import FileBuffer
+from geoipdb.types import Record
 
 
 class Reader:

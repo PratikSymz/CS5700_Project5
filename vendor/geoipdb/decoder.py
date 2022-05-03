@@ -16,9 +16,9 @@ except ImportError:
     mmap = None  # type: ignore
 
 
-from maxminddb.errors import InvalidDatabaseError
-from maxminddb.file import FileBuffer
-from maxminddb.types import Record
+from geoipdb.errors import InvalidDatabaseError
+from geoipdb.file import FileBuffer
+from geoipdb.types import Record
 
 
 class Decoder:  # pylint: disable=too-few-public-methods
