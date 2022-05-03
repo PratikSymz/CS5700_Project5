@@ -11,33 +11,86 @@ Team Members:
 ======================================================================
 This project is implmented using Python programming language
 
-Delivery for Milestone April 19 2022:
-	Makefile
-	httpserver
-	dnsserver
-	deployCDN
-	runCDN
-	stopCDN
-	README
-
+Milestone April 19 2022:
 ======================================================================
-High-level Approach
-	- httpserver (Haojun and Pratik)
+1. High-level Approach
+	a. httpserver (Haojun and Pratik)
 		- A basic CDN HTTP server with cache management
 		  usage: ./httpserver -p <port> -o <origin>
 
 		- When a client send request to our HTTP server, we managed to check the local cache first. If the requested content exists in the local cache content, the server will send the content to the client directly. If the requested content does not exist in the local cache,
 		it will forward the request to ORIGIN server and get response from the ORIGIN server. If the response status code from ORIGIN is 200, it will save the file accordingly and forward the response to the client.
 
-	- dnsserver (Marwa)
+	b. dnsserver (Marwa)
 		- A basic DNS server without any measurement methods
 		  usage: ./dnsserver -p <port> -n <name>
 		- accept clients DNS query and parse the query,'select best replica' and response composed DNS answers to client.
 
-
-======================================================================
-Challenges
+2. Challenges
 	- Figuring how to SSH into the replica and DNS servers
 	- DNS server: learning how to extract the correct data from the query and how to send the correct response
 	- HTTP Server: Figuring out the caching mechanism from the start, which took a lot of our time.
+
+
+Final Submission May 03 2022:
+======================================================================
+1. High-level Approach
+	1.1. HTTP Server
+		a. httpcacher
+			- The approach was to push as much pre-processing operations as we could in the deployment phase. This script manages the caching of the top 250 results (<= 20MB) in a local cache directory within the server by making a http request for each query to the origin server. It caches the results until it reached the storage limit that we set. Later information in the disk-cache will be moved to in-memory cache enabling us to make faster lookups.
+
+			- Additionally, we implement compression to store results in our cache. This compression helps us improve our latency by maintaining more cached results for the popular queries. 
+			
+			- We implemented a basic caching algorithm of just storing the top results since the page_views.csv already provides us information about the future and which queries would be requested the most. This makes our job much easier. However, if we weren't provided this information, caching techniques such as LRU cache and Memcache would've been more efficient and realistic.
+
+		b. httpserver
+			- This is the primary script for activating the servers. The server starts by reading information off the disk-cache on the server one at a time and transferring it over to the in-memory/virtual cache which has better performance. At the end, the local cache is removed from the program directory and only the in-memory cache remains enabling us to stay within the memory constraints.
+
+			- Next the server operates using the following logic:
+				* The requested url path is verified to check whether the url path is correct.
+				* Check whether the client's requested query is within our in-memory cache
+				* If yes, respond the client with the cached information by decompressing it.
+				* If not, make a GET request to the origin and fetch the results, which are sent to the client as response.
+
+	1.2. DNS Server
+		a. The DNS server listens on the port for incoming dig queries. The query is then processed, and finds the nearest replica server relative to the address of the client sending the query. The best replica is returned in the dig response.
+		
+		b. The answer returned to the client is then used to make 'wget' requests to the given server address.
+
+2. Challenges faced
+	2.1 HTTP Server:
+		a. Figuring out the caching mechanism from the start, which took a lot of our time.
+		b. It was a long process to decide on which caching technique to implement. We debated between using a LRU cache management technique, but then we realised that it was not needed for this scale of the project as the data was not going to be updated.
+
+	2.2 DNS server:
+		a. Learning how to extract the correct data from the dig query was a big challenge, as the dnslib package we used did not have the best documentation it took some time to return the correct response.
+		
+		b. Returning the correct replica was also a challenge. At first we wanted to make sure we were returning the correct answer, so the best replica was hard-coded. Once we decided on the correct geoip database, we implemented methods that returned the nearest replica by looping through each server and measuring the distance between the client and server address.
+		
+		c. The next challenge was deciding on how to include the geoip library package in the program without using pip dependency. We used a vendoring technique, creating a vendored package in our program that implements the same functionality as the pip library. This meant that the geoip database functionality could be used in the khoury servers without having to install any packages.
+
+	2.3 [deploy|run|stop]CDN Scripts:
+		a. Implementing the deployment sript took longer than expected since it was challenging what steps to perform in the deployment phase to take the load off of the running phase. Additionally, the deployment was taking more than 15 mins at the start which we manged to reduce to about 7 mins at the end by performing various optimizations.
+
+		b. The stopCDN script required more effort than expected, since we had to ensure that we shut down all processes related to our program. We did not want zombie processes to exist after we shut down our servers and clean up all resources.
+
+3. Overview on Testing:
+	3.1 At first we had to make sure our program was able to run successfully on one server. We managed to get DNS responses using one server and no caching technique used.
 	
+	3.2 After successfully running the CDN on one server, we then started to implement the caching strategy, loading the page views into the cache before runnning the CDN. We ran into issues with the httpserver and dnsserver starting before the cache was loaded, so we made some changes to ensure that the cache was loaded completely before running the http and dns servers.
+	
+	3.3 We then added the functionality to calculate the best replica server to return in the DNS lookup.
+	3.4 Finally, we added deployments to the other servers in the CDN deployment scripts.
+	
+	3.5 We continued to make optimizations, such as making sure the servers were cleaned up from files before running/deploying the CDN, as well as removing files afterwards. Also, in order not to have many files especially large files in our program, we made sure all the necessary data was downloaded before deployment to reduce space when running the CDN.
+
+4. Work Contribution:
+	4.1 Haojun Zhu: Implemented the [deploy|run|stop]CDN scripts to ensure all resources are efficiently managed and perform testing with all the scripts to check whether the scripts are peforming correctly.
+
+	4.2 Marwa Elali: Implemented the dnsserver. Used dnslib to process incoming dig queries and return DNS lookup responses. Implemented a function that measures the distance between client and server IP addresses and returns the nearest replica server. Used a vendoring technique by creating a vendor directory in the program that implements the functionality of the geoip database we wanted to use. The dnsserver adds the vendor package to the system path and is able to use our vendored package in order not to use pip dependent packages for submission.
+
+	4.3 Pratik Budhiraja: Implemented the HTTP Cacher to cache a chunk of the query pages during deployment time and store in the local directory. Implemented HTTP Server along with Haojun to send the client cached information if it is in the cache or send a request to fetch the response from the origin server.
+
+5. With enough time:
+	5.1 Implementing active measurement using scamper. We already started with that part but had to move to GeoIP implementation due to time constraints.
+	5.2 Made further optimizations to check scope for further peformance improvements.
