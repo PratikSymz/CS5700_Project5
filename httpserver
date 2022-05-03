@@ -92,7 +92,7 @@ class CDNHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
                 # Send response to the client
-                self.wfile.write('204'.encode())
+                self.wfile.write('204: NO CONTENT'.encode())
             
             # Parse and validate the client's request url path
             else:              
