@@ -12,11 +12,11 @@ def build_request_URL(host_addr: str, port_no: int, query: str) -> str:
     '''
     return 'http://' + host_addr + ':' + str(port_no) + '/' + query
 
-def get_cdn_ip() -> str:
+def get_my_ip() -> str:
     '''
-        Function: get_cdn_ip() - determines the CDN's IP address by pinging to Google's primary DNS server
+        Function: get_my_ip() - determines the server's IP address by pinging to Google's primary DNS server
         Parameters: none
-        Returns: the CDN's IP address
+        Returns: the server's IP address
     '''
     host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     host_socket.connect(('8.8.8.8', 80))

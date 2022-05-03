@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse, zlib, os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
@@ -162,7 +164,7 @@ def start_CDN_server() -> None:
         Returns: none
     '''
     # Extract the CDN host IP address
-    cdn_IP = utils.get_cdn_ip()
+    cdn_IP = utils.get_my_ip()
     # Instantiate the HTTP server, with the CDN IP address and port number and the HTTP request handler class managing the GET requests
     http_server = HTTPServer((cdn_IP, http_port), CDNHTTPRequestHandler)
     # Start the HTTP server
@@ -174,8 +176,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='HTTP Server')
 
     # Store HTTP port no. and Origin server hostname from terminal
-    parser.add_argument('-p', dest='http_port', type=int, action='store', help='<CDN Server Port>')
-    parser.add_argument('-o', dest='origin_hostname', type=str, action='store', help='<Origin Hostname>')
+    parser.add_argument('-p', dest='http_port', type=int, action='store', required=True, help='<CDN Server Port>')
+    parser.add_argument('-o', dest='origin_hostname', type=str, action='store', required=True, help='<Origin Hostname>')
     args = parser.parse_args()
 
     # Extract the input HTTP port and Origin Server hostname
