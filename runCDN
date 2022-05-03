@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Hostname list
+DNSHOST=p5-dns.5700.network
+HTTPHOSTS=(p5-http-a.5700.network p5-http-b.5700.network p5-http-c.5700.network p5-http-d.5700.network p5-http-e.5700.network p5-http-f.5700.network p5-http-g.5700.network)
+
+# HTTP and DNS server directory names
+DNSDIR='dns_server'
+HTTPDIR='http_server'
+
+# Extract the argument parameters
+while getopts p:o:n:u:i: args
+do
+	case $args in
+		p)
+			port=$OPTARG
+			;;
+		o)
+			origin=$OPTARG
+			;;
+		n)
+			name=$OPTARG
+			;;
+		u)
+			username=$OPTARG
+			;;
+		i)
+			keyfile=$OPTARG
+			;;
+		?)
+			echo "usage: ./runCDN -p <port> -o <origin> -n <name> -u <username> -i <keyfile>"
+			exit 1
+			;;
+	esac
+done
+
+# Start the CDN servers
+printf "Starting CDN servers...\n\n"
+for host in "${HTTPHOSTS[@]}"
+do
+	printf "[Starting CDN server at $username@$host]...\n"
+	# Remove the pageviews.csv and httpcacher.py files not needed during running phase
+	ssh -i $keyfile $username@$host "cd $HTTPDIR; rm -f pageviews.csv httpcacher.py"
+	# Run the script to start the CDN server and respond to client requests for content
+	ssh -i $keyfile $username@$host "cd $HTTPDIR; nohup ./httpserver -p $port -o $origin > /dev/null 2>&1 &"
+	printf "RUNNING: CDN server at $username@$host...\n\n"
+done
+
+# Start the DNS server
+printf "Starting DNS server at $username@$DNSHOST...\n"
+# Run the script to start the DNS server and respond to client requests for dns lookups
+ssh -i $keyfile $username@$DNSHOST "cd $DNSDIR; nohup ./dnsserver -p $port -n $name > /dev/null 2>&1 &"
+printf "RUNNING: DNS server at $username@$DNSHOST...\n\n"
