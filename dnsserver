@@ -65,7 +65,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         Return:   IP address of nearest replica server
         '''
         geo_ip = GeoIP()
-        client_lat, client_lon = geo_ip.get_location(client_addr) # TODO replace with client_addr
+        client_lat, client_lon = geo_ip.get_location(client_addr)
         nearest = ''
         min_dist = float('inf')
         for r in servers.keys():
